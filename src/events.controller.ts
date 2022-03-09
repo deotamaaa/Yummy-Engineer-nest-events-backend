@@ -1,11 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from "@nestjs/common";
 
 @Controller('/events')
 export class EventsController {
 
     @Get()
     findAll() {
-
+        return [
+            { id: 1, name: 'Event 1' },
+            { id: 2, name: 'Event 2' },
+        ]
     }
 
     @Get(':id')
@@ -23,9 +26,8 @@ export class EventsController {
 
     }
 
-
-
     @Delete(':id')
+    @HttpCode(204)
     remove(@Param('id') id) {
     }
 
