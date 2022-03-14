@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, ValidationPipe } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, MoreThan, Repository } from "typeorm";
 import { CreateEventDto } from "./create-event.dto";
@@ -7,7 +7,7 @@ import { UpdateEventDto } from "./update-event.dto";
 
 @Controller('/events')
 export class EventsController {
-
+    private readonly logger = new Logger(EventsController.name);
     constructor(
         @InjectRepository(Event)
         private readonly repository: Repository<Event>,
@@ -33,8 +33,12 @@ export class EventsController {
 
     @Get(':id')
     async findOne(@Param('id', ParseIntPipe) id) {
-        console.log(typeof id);
-        return await this.repository.findOne(id);
+        // console.log(typeof id);
+        const event = await this.repository.findOne(id);
+
+        if (!event) {
+            throw new NotFoundException();
+        }
     }
 
     @Post()
@@ -48,6 +52,9 @@ export class EventsController {
     @Patch(':id')
     async update(@Param('id') id, @Body() input: UpdateEventDto) {
         const event = await this.repository.findOne(id);
+        if (!event) {
+            throw new NotFoundException();
+        }
         return await this.repository.save(
             {
                 ...event,
@@ -55,12 +62,16 @@ export class EventsController {
                 when: input.when ? new Date(input.when) : event.when,
             }
         );
+
     }
 
     @Delete(':id')
     @HttpCode(204)
     async remove(@Param('id') id) {
         const event = await this.repository.findOne(id);
+        if (!event) {
+            throw new NotFoundException();
+        }
         await this.repository.remove(event);
     }
 
