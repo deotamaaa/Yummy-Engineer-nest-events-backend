@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { AttendeeAnswerEnum } from "./attendee.entity";
 import { Event } from "./event.entity";
 
 @Injectable()
@@ -18,8 +19,40 @@ export class EventsService {
             .orderBy('e.id', 'DESC');
     }
 
+    public getEventsWithAttendeeCountQuERY() {
+        return this.getEventsBaseQuery()
+            .loadRelationCountAndMap('e.attendeeCount', 'e.attendees')
+            .loadRelationCountAndMap(
+                'e.attendeeAcepted',
+                'e.attendees',
+                'attendee',
+                (qb) => qb
+                    .where('attendee.answer = :answer',
+                        {
+                            answer: AttendeeAnswerEnum.Accepted
+                        }))
+            .loadRelationCountAndMap(
+                'e.attendeeMaybe',
+                'e.attendees',
+                'attendee',
+                (qb) => qb
+                    .where('attendee.answer = :answer',
+                        {
+                            answer: AttendeeAnswerEnum.Maybe
+                        }))
+            .loadRelationCountAndMap(
+                'e.attendeeRejected',
+                'e.attendees',
+                'attendee',
+                (qb) => qb
+                    .where('attendee.answer = :answer',
+                        {
+                            answer: AttendeeAnswerEnum.Rejected
+                        }))
+    }
+
     public async getEvent(id: number): Promise<Event | undefined> {
-        const query = this.getEventsBaseQuery()
+        const query = this.getEventsWithAttendeeCountQuERY()
             .andWhere('e.id = :id', { id });
 
         this.logger.debug(query.getSql());
