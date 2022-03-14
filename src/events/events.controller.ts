@@ -1,11 +1,12 @@
-import { Body, Controller, Delete, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, ValidationPipe } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, MoreThan, Repository } from "typeorm";
 import { Attendee } from "./attendee.entity";
-import { CreateEventDto } from "./create-event.dto";
+import { CreateEventDto } from "./input/create-event.dto";
 import { Event } from "./event.entity";
 import { EventsService } from "./events.service";
-import { UpdateEventDto } from "./update-event.dto";
+import { UpdateEventDto } from "./input/update-event.dto";
+import { ListEvents } from "./input/list.events";
 
 @Controller('/events')
 export class EventsController {
@@ -20,8 +21,13 @@ export class EventsController {
 
 
     @Get()
-    async findAll() {
-        return await this.repository.find();
+    async findAll(@Query() filter: ListEvents) {
+        this.logger.debug(filter);
+        this.logger.log(`Hit the findAll route`);
+        const events = await this.eventsService
+            .getEventsWithAttendeeCountFiltered(filter);
+        this.logger.debug(`Found ${events.length} events`);
+        return events;
     }
 
     @Get('/practice')
