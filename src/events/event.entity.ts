@@ -18,6 +18,7 @@ export class Event {
     @OneToMany(
         () => Attendee,
         (attendee) => attendee.event,
+        { eager: true },
     )
     attendees: Attendee[];
 }

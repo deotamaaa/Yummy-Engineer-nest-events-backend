@@ -31,6 +31,13 @@ export class EventsController {
         });
     }
 
+    @Get('practice2')
+    async practice() {
+        return await this.repository.findOne(
+            1,
+            { relations: ['attendees'] });
+    }
+
     @Get(':id')
     async findOne(@Param('id', ParseIntPipe) id) {
         // console.log(typeof id);
@@ -64,6 +71,7 @@ export class EventsController {
         );
 
     }
+
 
     @Delete(':id')
     @HttpCode(204)
