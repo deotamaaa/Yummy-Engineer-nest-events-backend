@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, MoreThan, Repository } from "typeorm";
 import { Attendee } from "./attendee.entity";
@@ -10,6 +10,7 @@ import { ListEvents } from "./input/list.events";
 import { CurrentUser } from "src/auth/current-user.decorator";
 import { User } from "src/auth/user.entity";
 import { AuthGuardJwt } from "src/auth/auth-guard.jwt";
+import e from "express";
 
 @Controller('/events')
 export class EventsController {
@@ -84,30 +85,43 @@ export class EventsController {
     }
 
     @Patch(':id')
-    async update(@Param('id') id, @Body() input: UpdateEventDto) {
-        const event = await this.repository.findOne(id);
+    @UseGuards(AuthGuardJwt)
+    async update(
+        @Param('id') id,
+        @Body() input: UpdateEventDto,
+        @CurrentUser() user: User) {
+        const event = await this.eventsService.getEvent(id);
+
         if (!event) {
             throw new NotFoundException();
         }
-        return await this.repository.save(
-            {
-                ...event,
-                ...input,
-                when: input.when ? new Date(input.when) : event.when,
-            }
-        );
-
+        if (event.organizerId !== user.id) {
+            throw new ForbiddenException(
+                null, 'You are not the organizer of this event');
+        }
+        return await this.eventsService.updateEvent(event, input);
     }
 
 
     @Delete(':id')
+    @UseGuards(AuthGuardJwt)
     @HttpCode(204)
-    async remove(@Param('id') id) {
-        const result = await this.eventsService.deleteEvent(id);
-
-        if (result?.affected !== 1) {
+    async remove(
+        @Param('id') id,
+        @CurrentUser() user: User
+    ) {
+        const event = await this.eventsService.getEvent(id);
+        if (!event) {
             throw new NotFoundException();
         }
+        if (event.organizerId !== user.id) {
+            throw new ForbiddenException(
+                null, 'You are not the organizer of this event');
+        }
+        await this.eventsService.deleteEvent(id);
+
+
+
     }
 
 }
