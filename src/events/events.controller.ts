@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, ClassSerializerInterceptor, Controller, Delete, ForbiddenException, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, SerializeOptions, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, MoreThan, Repository } from "typeorm";
 import { Attendee } from "./attendee.entity";
@@ -10,9 +10,11 @@ import { ListEvents } from "./input/list.events";
 import { CurrentUser } from "src/auth/current-user.decorator";
 import { User } from "src/auth/user.entity";
 import { AuthGuardJwt } from "src/auth/auth-guard.jwt";
-import e from "express";
 
 @Controller('/events')
+@SerializeOptions({
+    strategy: 'excludeAll',
+})
 export class EventsController {
     private readonly logger = new Logger(EventsController.name);
     constructor(
@@ -26,6 +28,7 @@ export class EventsController {
 
     @Get()
     @UsePipes(new ValidationPipe({ transform: true }))
+    @UseInterceptors(ClassSerializerInterceptor)
     async findAll(@Query() filter: ListEvents) {
         const events = await this.eventsService
             .getEventsWithAttendeeCountFilteredPaginated(
@@ -67,6 +70,7 @@ export class EventsController {
     }
 
     @Get(':id')
+    @UseInterceptors(ClassSerializerInterceptor)
     async findOne(@Param('id', ParseIntPipe) id) {
         // console.log(typeof id);
         // const event = await this.repository.findOne(id);
@@ -80,12 +84,14 @@ export class EventsController {
 
     @Post()
     @UseGuards(AuthGuardJwt)
+    @UseInterceptors(ClassSerializerInterceptor)
     async create(@Body() input: CreateEventDto, @CurrentUser() user: User) {
         return await this.eventsService.createEvent(input, user)
     }
 
     @Patch(':id')
     @UseGuards(AuthGuardJwt)
+    @UseInterceptors(ClassSerializerInterceptor)
     async update(
         @Param('id') id,
         @Body() input: UpdateEventDto,
