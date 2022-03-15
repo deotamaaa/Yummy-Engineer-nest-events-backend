@@ -7,6 +7,7 @@ import { AttendeeAnswerEnum } from "./attendee.entity";
 import { Event } from "./event.entity";
 import { CreateEventDto } from "./input/create-event.dto";
 import { ListEvents, WhenEventFilter } from "./input/list.events";
+import { UpdateEventDto } from "./input/update-event.dto";
 
 @Injectable()
 export class EventsService {
@@ -113,6 +114,16 @@ export class EventsService {
             organizer: user,
             when: new Date(input.when)
         })
+    }
+
+    public async updateEvent(event: Event, input: UpdateEventDto): Promise<Event> {
+        return await this.eventsRepository.save(
+            {
+                ...event,
+                ...input,
+                when: input.when ? new Date(input.when) : event.when,
+            }
+        );
     }
 
     public async deleteEvent(id: number): Promise<DeleteResult> {
